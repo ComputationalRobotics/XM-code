@@ -7,7 +7,6 @@
 - If you only have images and intrinsics, you will also need depth model. Here we use [Unidepth](https://github.com/lpiccinelli-eth/UniDepth).
 - If you do not have intrinsics: TODO. We are working on this right now.
 
-11
 ### STEP 2: Installation
 
 #### Install Python environment
