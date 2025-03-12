@@ -131,7 +131,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     run_timer.PrintSeconds();
   }
   
-  std::ofstream ofs("./assets/data/output.txt");
+  std::ofstream ofs("./assets/tempdata/output.txt");
   std::cout << "-------------------------------------" << std::endl;
   if (!ofs) {
       std::cout << "Error opening file for writing" << std::endl;
@@ -154,7 +154,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     std::cout << "total observation:" << sum << std :: endl;
     ofs.close();
   }
-  std::ofstream ofn("./assets/data/filename.txt");
+  std::ofstream ofn("./assets/tempdata/filename.txt");
   if (!ofn) {
       std::cout << "Error opening file for writing" << std::endl;
   }else{
@@ -167,7 +167,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     }
     ofn.close();
   }
-  std::ofstream ofc("./assets/data/relative_pose.txt");
+  std::ofstream ofc("./assets/tempdata/relative_pose.txt");
   if (!ofc) {
       std::cout << "Error opening file for writing" << std::endl;
   }else{

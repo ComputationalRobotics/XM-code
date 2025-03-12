@@ -8,8 +8,10 @@ from utils.creatematrix import create_matrix
 from utils.io import save_matrix_to_bin, load_matrix_from_bin
 from utils.recoversolution import recover_XM
 from utils.visualization import visualize_camera, visualize
+from utils.checkconnection import checklandmarks
 
 import numpy as np
+import networkx as nx
 
 data, n_observation = load_matrix_from_bin('./assets/3-CreateMatrix/data.bin')
 
@@ -50,7 +52,13 @@ def delete_thereshold(min_threshold, M, data):
     return max_frame, num_valid_frames, frame_index
 
 # delete and reindex the frames that contains zero landmarks
-_, N, indices_frame = delete_thereshold(0, N, edges[:,0]-1)
+max_frame, N, indices_frame = delete_thereshold(0, N, edges[:,0]-1)
+
+# exchange the first frame
+if indices_frame[max_frame] != 0:
+    indices_frame[indices_frame == 0] = indices_frame[max_frame]
+    indices_frame[max_frame] = 0
+    
 edges[:,0] = indices_frame[edges[:,0]-1].copy() + 1
 # delete the row that edges contain -1
 indices = np.any(edges == 0, axis=1)
@@ -66,6 +74,29 @@ indices = np.any(edges == 0, axis=1)
 edges = edges[~indices]
 weights = weights[~indices]
 landmarks = landmarks[~indices]
+
+G = nx.Graph()
+for u, v in edges:
+    G.add_edge(u, v + N)
+components = list(nx.connected_components(G))
+print("Number of connected components: ", len(components))
+largest_component = max(components, key=len)
+largest_component_set = set(largest_component)
+filtered_indices = [
+    i for i, (u, v) in enumerate(edges)
+    if u in largest_component_set and (v + N) in largest_component_set
+]
+filtered_indices = np.array(filtered_indices)
+if filtered_indices.shape[0] < edges.shape[0]:
+    print("Not connected, Choose Largest Component")
+    edges = edges[filtered_indices]
+    weights = weights[filtered_indices]
+    landmarks = landmarks[filtered_indices]
+    _, N, indices_frame = delete_thereshold(0, N, edges[:,0]-1)
+    edges[:,0] = indices_frame[edges[:,0]-1].copy() + 1
+    _, M, indices_landmarks = delete_thereshold(0, M, edges[:,1]-1)
+    edges[:,1] = indices_landmarks[edges[:,1]-1].copy() + 1
+    # here do not need to delete edges because we already know the graph is connected
 
 create_matrix(weights, edges, landmarks, './assets/3-CreateMatrix')
 lam = 0.0

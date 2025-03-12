@@ -1,4 +1,5 @@
 import open3d as o3d
+import numpy as np
 
 def visualize_camera(extrinsics):
     intrinsic = o3d.camera.PinholeCameraIntrinsic()
@@ -29,7 +30,7 @@ def visualize_camera(extrinsics):
         vis.add_geometry(geometry)  # Add one geometry at a time
     vis.run()
     
-def visualize(extrinsics, points):
+def visualize(extrinsics, points, colors):
     intrinsic = o3d.camera.PinholeCameraIntrinsic()
     intrinsic.set_intrinsics(
         width=640,
@@ -43,6 +44,7 @@ def visualize(extrinsics, points):
     
     vis = o3d.visualization.Visualizer()
     vis.create_window()
+    vis.get_render_option().point_size = 1.0
 
     for extrinsic in extrinsics:
         camera_visualization = o3d.geometry.LineSet.create_camera_visualization(
@@ -59,6 +61,7 @@ def visualize(extrinsics, points):
         
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
+    pcd.colors = o3d.utility.Vector3dVector(colors)
+
     vis.add_geometry(pcd)
-    
     vis.run()
