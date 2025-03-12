@@ -28,6 +28,7 @@ from utils.creatematrix import create_matrix
 from utils.io import save_matrix_to_bin, load_matrix_from_bin
 from utils.recoversolution import recover_XM
 from utils.visualization import visualize_camera, visualize
+from utils.ceresforXM import XM_Ceres_interface
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 print( os.path.abspath(os.path.join(current_dir, "./assets/Replica/images")))
@@ -41,11 +42,11 @@ if not os.path.exists(output_path):
     
 # Decide which one to run
 # input: image
-run_colmap = 1
+run_colmap = 0
 # input: database
-run_glomap = 1
+run_glomap = 0
 # input: view graph + 2D observations
-run_depth = 1
+run_depth = 0
 
 # load camera information and gt poses (if needed)
 gt = load_replica_gt(dataset_path)
@@ -298,51 +299,6 @@ threshold = np.percentile(error, 90)  # 85th percentile
 
 indices_to_remove = np.where(error > threshold)[0] 
 
-# # DEBUG on this
-# i = 40
-# indices_i_frame = np.where(edges[:, 0] == i)[0]
-# # find the index where overlap
-# overlap_mask = np.in1d(indices_i_frame, indices_to_remove)
-# overlap = np.where(overlap_mask)[0]
-
-# world_points = p_est[:, edges[indices_i_frame, 1] - 1].T
-# camera_points = np.einsum('ij,nj->ni', R_real[i-1], landmarks[indices_i_frame,:]) + t_est[:, i-1]
-# world_points_inliers = world_points[np.setdiff1d(np.arange(world_points.shape[0]), overlap)]
-# camera_points_inliers = camera_points[np.setdiff1d(np.arange(camera_points.shape[0]), overlap)]
-# world_points_outliers = world_points[overlap]
-# camera_points_outliers = camera_points[overlap]
-# # show with open3d
-# o3d_world = o3d.geometry.PointCloud()
-# o3d_world.points = o3d.utility.Vector3dVector(world_points_inliers)
-# o3d_world.paint_uniform_color([0, 0, 1])
-
-# o3d_camera = o3d.geometry.PointCloud()
-# o3d_camera.points = o3d.utility.Vector3dVector(camera_points_inliers)
-# o3d_camera.paint_uniform_color([1, 0, 0])
-
-# o3d_world_outliers = o3d.geometry.PointCloud()
-# o3d_world_outliers.points = o3d.utility.Vector3dVector(world_points_outliers)
-# o3d_world_outliers.paint_uniform_color([0, 1, 0])
-
-# o3d_camera_outliers = o3d.geometry.PointCloud()
-# o3d_camera_outliers.points = o3d.utility.Vector3dVector(camera_points_outliers)
-# o3d_camera_outliers.paint_uniform_color([1, 1, 0])
-
-# # draw lines
-# all_points = np.vstack((world_points_outliers, camera_points_outliers))
-# num_outliers = world_points_outliers.shape[0]
-
-# lines = np.array([[i, i + num_outliers] for i in range(num_outliers)])
-
-# line_set = o3d.geometry.LineSet()
-# line_set.points = o3d.utility.Vector3dVector(all_points)
-# line_set.lines = o3d.utility.Vector2iVector(lines)
-# line_set.colors = o3d.utility.Vector3dVector([[1, 0, 1] for _ in range(num_outliers)])
-
-# o3d.visualization.draw_geometries([o3d_world, o3d_camera, o3d_world_outliers, o3d_camera_outliers, line_set])
-# exit()
-
-
 edges = np.delete(edges, indices_to_remove, axis=0)  
 weights = np.delete(weights, indices_to_remove)
 rgbs = np.delete(rgbs, indices_to_remove, axis=0)
@@ -377,6 +333,25 @@ R_real, s_real, p_est, t_est = recover_XM(Q, R, s, Abar, lam)
 N = s_real.shape[0]
 M = p_est.shape[1]
 
+# If you still do not have a good result, consider using Ceres to refine using 2D observations.
+# But make sure your 2D observation is good enough -- otherwise this won't help
+
+landmarks_2D = landmarks[:, :2] / landmarks[:, 2, None]
+nan_mask = np.isnan(landmarks_2D).any(axis=1)
+
+R_real, t_est, p_est, ceres_time = XM_Ceres_interface(edges[~nan_mask], landmarks_2D[~nan_mask], R_real, t_est, p_est)
+
+sR_real = np.zeros((3, 3*N))
+for i in range(N):
+    sR_real[:,3*i:3*i+3] = s_real[i] * R_real[:,3*i:3*i+3]
+    
+# Compute ybar_est
+ybar_est = Abar @ sR_real.T
+
+# Add a column of zeros to the left
+y_est = np.hstack((np.zeros((3, 1)), ybar_est.T))
+
+p_est = y_est[:, N:N + M]
 
 extrinsics = []
 for i in range(N):

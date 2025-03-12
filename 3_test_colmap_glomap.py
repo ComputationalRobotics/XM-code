@@ -34,9 +34,9 @@ if not os.path.exists(output_path):
     
 # Decide which one to run
 # input: image
-run_colmap = 0
+run_colmap = 1
 # input: database
-run_glomap = 0
+run_glomap = 1
 # input: view graph + 2D observations
 run_depth = 1
 

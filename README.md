@@ -1,5 +1,9 @@
 # XM: Build Rome With Convex Optimization
 
+[Website](https://computationalrobotics.seas.harvard.edu/XM/)|[Paper](https://computationalrobotics.seas.harvard.edu/XM/static/XM.pdf)|[Arxiv](https://arxiv.org/abs/2502.04640)
+
+---
+
 ## STEP 1: Decide what you need
 - If you already have the observation of 3D landmarks in each camera frame, you can directly pass the view-graph and observations using `./example/2_test_creatematrix.py`
   - If you found the result is not good, that is because the observation have so much noise (almost always solver will converge to global optimal, but the quality of observation indeed influence accuracy). You can refer to `.py`  for help.
@@ -75,8 +79,14 @@ pip install -e . --extra-index-url https://download.pytorch.org/whl/cu124
 - If pytorch3d cannot build, please comment the line about pytorch in `requirement.txt` and retry. After successfully installing other dependence, build pytorch3d again.
 
 - If `name 'warnings' is not defined`, you may need to add `import warnings` in the corresponding file.
+
+- It will show some warning about timm, but that do not hurt.
+
+- If loaded together with `XM` or `pycolmap`, `pyceres` using `import`, UniDepth must be the first one.
 </details>
 
 ## STEP 3: Check examples
+
+
 
 
