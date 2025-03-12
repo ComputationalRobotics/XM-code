@@ -1,11 +1,22 @@
 # XM: Build Rome With Convex Optimization
 
-[Website](https://computationalrobotics.seas.harvard.edu/XM/)|[Paper](https://computationalrobotics.seas.harvard.edu/XM/static/XM.pdf)|[Arxiv](https://arxiv.org/abs/2502.04640)
+## [Website](https://computationalrobotics.seas.harvard.edu/XM/)|[Paper](https://computationalrobotics.seas.harvard.edu/XM/static/XM.pdf)|[Arxiv](https://arxiv.org/abs/2502.04640)
 
----
+## About
+
+XM is a scalable and initialization-free solver
+for global bundle adjustment, leveraging learned depth and
+convex optimization. This repositary implement XM and its whole structure from motion pipeline XM-SfM, achieve huge speed up compare to existing solver.
+
+## News
+
+- [ ] Enable joint estimation on camera intrinsics.
+- [ ] Speed up on preprocess part.
+- [x] `12.03.2025`: Release beta version.
+
 
 ## STEP 1: Decide what you need
-- If you already have the observation of 3D landmarks in each camera frame, you can directly pass the view-graph and observations using `./example/2_test_creatematrix.py`
+- If you already have the observation of 3D landmarks in each camera frame, you can directly pass the view-graph and observations. See [this](./1_test_solve.py)
   - If you found the result is not good, that is because the observation have so much noise (almost always solver will converge to global optimal, but the quality of observation indeed influence accuracy). You can refer to `.py`  for help.
 - If have the images, intrinsics of cameras and corresponding depth information, you will need to install [COLMAP](https://colmap.github.io/) and [GLOMAP](https://github.com/colmap/glomap).
 - If you only have images and intrinsics, you will also need depth model. Here we use [Unidepth](https://github.com/lpiccinelli-eth/UniDepth).
