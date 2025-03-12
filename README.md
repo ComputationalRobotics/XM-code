@@ -20,8 +20,10 @@ pip install -r requirements.txt
 ### CMake XM main solver
 Directly run
 ```
+cd XM
 cmake -B build .
 cmake --build build
+cd ..
 ```
 Note that your terminal should under the XM environment.
 
@@ -29,7 +31,7 @@ Note that your terminal should under the XM environment.
 
 This part should be replaced in our final release, but for now you will need to build them as a component for our pipline.
 
-According to [Ceres](http://ceres-solver.org/), [GLOMAP](https://github.com/colmap/glomap) and [COLMAP](https://colmap.github.io/install.html#build-from-source), you should first build Ceres and pyceres.
+According to [Ceres](http://ceres-solver.org/), [GLOMAP](https://github.com/colmap/glomap) and [COLMAP](https://colmap.github.io/install.html#build-from-source), you should first build Ceres and pyceres. You can install them into the `/deps/` folder together with GLOMAP.
 
 **Though you can install pyceres and pycolmap through `pip`, we highly recommand build from source because it support CUDA.**
 
@@ -54,6 +56,26 @@ cmake .. -GNinja
 ninja && sudo ninja install
 cd ../../../
 ```
+
+### Install Depth Estimation Model
+
+Our choice is [Unidepth](https://github.com/lpiccinelli-eth/UniDepth), but you may change to you custom one (If the python requirement is $\geq 3.10$ then you need to figure out the environment yourself).
+
+To build Unidepth directly run this:
+
+```
+cd deps/
+git clone git@github.com:lpiccinelli-eth/UniDepth.git
+# Change to your own CUDA version
+pip install -e . --extra-index-url https://download.pytorch.org/whl/cu124
+```
+<details>
+<summary>You may encouter the same issue as me:</summary>
+
+- If pytorch3d cannot build, please comment the line about pytorch in `requirement.txt` and retry. After successfully installing other dependence, build pytorch3d again.
+
+- If `name 'warnings' is not defined`, you may need to add `import warnings` in the corresponding file.
+</details>
 
 ## STEP 3: Check examples
 

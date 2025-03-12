@@ -1,4 +1,6 @@
-build/
-example/python/utils/__pycache__/
+XM/build/
+utils/__pycache__/
 deps/glomap/build/
 deps/colmap/
+assets/Replica/output
+deps/UniDepth/
