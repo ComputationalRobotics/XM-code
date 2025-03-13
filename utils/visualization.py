@@ -41,7 +41,6 @@ def visualize(extrinsics, points, colors = None):
         cy=240.0
     )
     geometries = []
-    
     vis = o3d.visualization.Visualizer()
     vis.create_window()
     vis.get_render_option().point_size = 3.0
@@ -58,11 +57,9 @@ def visualize(extrinsics, points, colors = None):
         
     for geometry in geometries:
         vis.add_geometry(geometry)  # Add one geometry at a time
-        
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
     if colors is not None:
         pcd.colors = o3d.utility.Vector3dVector(colors)
-
     vis.add_geometry(pcd)
     vis.run()

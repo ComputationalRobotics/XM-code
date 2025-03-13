@@ -4,3 +4,4 @@ deps/glomap/build/
 deps/colmap/
 assets/Replica/output
 deps/UniDepth/
+deps/pyceres/

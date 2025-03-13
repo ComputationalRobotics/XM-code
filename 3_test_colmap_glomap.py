@@ -34,11 +34,11 @@ if not os.path.exists(output_path):
     
 # Decide which one to run
 # input: image
-run_colmap = 1
+run_colmap = 0
 # input: database
-run_glomap = 1
+run_glomap = 0
 # input: view graph + 2D observations
-run_depth = 1
+run_depth = 0
 
 # load camera information and gt poses (if needed)
 gt = load_replica_gt(dataset_path)
@@ -97,9 +97,9 @@ if run_glomap:
 
     # after running GLOMAP will output three .txt file in the assets/tempdata/ folder
 
-    matches = np.loadtxt(os.path.abspath(os.path.join(current_dir, "../../assets/tempdata/output.txt"))) 
-    File3 = pd.read_table(os.path.abspath(os.path.join(current_dir, "../../assets/tempdata/filename.txt")), header=None, names=["Var1", "Var2"], sep='\s+')
-    relpose = np.loadtxt(os.path.abspath(os.path.join(current_dir, "../../assets/tempdata/relative_pose.txt")))
+    matches = np.loadtxt(os.path.abspath(os.path.join(current_dir, "./assets/tempdata/output.txt"))) 
+    File3 = pd.read_table(os.path.abspath(os.path.join(current_dir, "./assets/tempdata/filename.txt")), header=None, names=["Var1", "Var2"], sep='\s+')
+    relpose = np.loadtxt(os.path.abspath(os.path.join(current_dir, "./assets/tempdata/relative_pose.txt")))
 
     File3 = File3.sort_values(by="Var1").reset_index(drop=True)
 
@@ -259,9 +259,9 @@ mean_rgbs = np.zeros((M, 3))
 
 np.add.at(mean_rgbs, indices, rgbs)
 
-counts = np.bincount(indices, minlength=M)[:, None] 
-mean_rgbs /= counts  
+counts = np.bincount(indices, minlength=M)[:, None]
 
+mean_rgbs /= counts  
 mean_rgbs = mean_rgbs[:, [2, 1, 0]]
 
 # visualize all
