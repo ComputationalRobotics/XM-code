@@ -40,7 +40,7 @@ cmake -B build .
 cmake --build build
 cd ..
 ```
-Note that your terminal should under the XM environment.
+Note that your terminal should under the XM environment. You can now run [example1](./1_test_solve.py) and [example2](./2_test_creatematrix.py).
 
 ### Install Ceres, COLMAP and GLOMAP (CHECK WHETHER YOU NEED IT)
 
@@ -71,6 +71,7 @@ cmake .. -GNinja
 ninja && sudo ninja install
 cd ../../../
 ```
+Now you can run [example3](./3_test_colmap_glomap.py)
 
 ### Install Depth Estimation Model
 
@@ -81,6 +82,7 @@ To build Unidepth directly run this:
 ```
 cd deps/
 git clone git@github.com:lpiccinelli-eth/UniDepth.git
+cd UniDepth
 # Change to your own CUDA version
 pip install -e . --extra-index-url https://download.pytorch.org/whl/cu124
 ```
@@ -95,6 +97,8 @@ pip install -e . --extra-index-url https://download.pytorch.org/whl/cu124
 
 - If loded together with `XM` or `pycolmap`, `pyceres` using `import`, UniDepth must be load before them.
 </details>
+
+Now you can run [example4](./4_test_unidepth.py) and [example5](./5_test_ceres.py).
 
 ## STEP 3: Check examples
 
