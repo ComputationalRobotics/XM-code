@@ -52,6 +52,28 @@ run_depth = 1
 gt = load_replica_gt(dataset_path)
 gt_camera = load_replica_camera(dataset_path)
 
+"""
+File Purpose:
+    This file processes input data consisting of images and camera intrinsic parameters.
+    The processing pipeline includes the following steps:
+
+    1. COLMAP Matching:
+         - Perform feature matching across the input images using COLMAP to establish reliable correspondences.
+    2. GLOMAP Indexing:
+         - Index the matched features using GLOMAP for efficient retrieval and further processing.
+    3. 2D to 3D Lifting:
+         - Lift 2D feature observations into 3D space using the available depth information (estimated or provided).
+    4. XM and XM^2 Computation:
+         - Run the XM algorithm to obtain an initial solution (e.g., a 3D reconstruction or pose estimation).
+    5. Ceres Refinement:
+         - Refine the initial solution obtained from XM using the Ceres optimizer to improve accuracy and consistency.
+
+Usage Note:
+    Ensure that the input images and intrinsic parameters are correctly pre-processed and aligned before running this pipeline.
+    The Ceres optimizer is employed after the XM step to fine-tune the results, so proper configuration of the optimizer parameters is crucial.
+"""
+
+
 # Run COLMAP feature extracting and matching
 if run_colmap:
     if len(gt_camera) == 1:

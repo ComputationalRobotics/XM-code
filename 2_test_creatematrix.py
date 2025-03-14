@@ -24,17 +24,31 @@ data = data[unique_indices,:]
 weights = data[:,5]
 landmarks = data[:,2:5]
 
-# input format: edges, weights, landmarks
-# edges is num_ob * 2 array, each row is a edge in view graph
-# weights is num_ob * 1 array, each row is the weight of the edge
-# landmarks is num_ob * 3 array, each row is the 3D position of the landmark
-# The landmarks has already normalized by camera intrinsics
+"""
+    input data:
+        edges (np.ndarray): A 2D array of shape (num_ob, 2) where each row represents an edge in the view graph.
+                            Each edge is defined as [frame_index, landmark_index].
+                            For example:
+                                edges = [[1, 1],
+                                         [1, 2],
+                                         [1, 3],
+                                         ...]
+        weights (np.ndarray): A 2D array of shape (num_ob, 1) where each row is the weight corresponding to the
+                              respective edge in 'edges'.
+        landmarks (np.ndarray): A 2D array of shape (num_ob, 3) where each row contains the 3D position of a landmark.
+                                Note that the landmark coordinates have already been normalized using the camera intrinsics.
 
-# edges = [1,1;
-#          1,2;
-#          1,3;
-#         frame_index,landmark_index;
-#         ...;]
+    Example:
+        >>> edges = np.array([[1, 1],
+                                [1, 2],
+                                [1, 3]])
+        >>> weights = np.array([[0.8],
+                                [0.9],
+                                [0.85]])
+        >>> landmarks = np.array([[0.5, 0.1, 1.2],
+                                  [0.6, 0.2, 1.1],
+                                  [0.55, 0.15, 1.3]])
+"""
 
 
 N = int(np.max(edges[:, 0]))  
@@ -54,7 +68,7 @@ def delete_thereshold(min_threshold, M, data):
 # delete and reindex the frames that contains zero landmarks
 max_frame, N, indices_frame = delete_thereshold(0, N, edges[:,0]-1)
 
-# exchange the first frame
+# exchange the first frame (optional)
 if indices_frame[max_frame] != 0:
     indices_frame[indices_frame == 0] = indices_frame[max_frame]
     indices_frame[max_frame] = 0
@@ -75,6 +89,7 @@ edges = edges[~indices]
 weights = weights[~indices]
 landmarks = landmarks[~indices]
 
+# check if the graph is connected
 G = nx.Graph()
 for u, v in edges:
     G.add_edge(u, v + N)
@@ -98,6 +113,7 @@ if filtered_indices.shape[0] < edges.shape[0]:
     edges[:,1] = indices_landmarks[edges[:,1]-1].copy() + 1
     # here do not need to delete edges because we already know the graph is connected
 
+# interface to create the matrix given the edges, weights and landmarks
 create_matrix(weights, edges, landmarks, './assets/3-CreateMatrix')
 lam = 0.0
 XM.solve('./assets/3-CreateMatrix/', 5, 1e-3, lam, 1000)
@@ -109,6 +125,7 @@ s,_ = load_matrix_from_bin('./assets/3-CreateMatrix/s.bin')
 Q,_ = load_matrix_from_bin('./assets/3-CreateMatrix/Q.bin')        
 
 # recover p and t
+# details refer to our paper
 R_real, s_real, p_est, t_est = recover_XM(Q, R, s, Abar, lam)
 
 extrinsics = []

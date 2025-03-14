@@ -51,6 +51,29 @@ run_depth = 1
 gt = load_replica_gt(dataset_path)
 gt_camera = load_replica_camera(dataset_path)
 
+"""
+File Purpose:
+    This file processes input data consisting of images and camera intrinsic parameters.
+    Unlike the previous pipeline, which used ground truth depth maps, this file uses Unidepth
+    to estimate depth from the input images. The processing pipeline is as follows:
+
+    1. COLMAP Matching:
+         - Perform feature matching across the input images using COLMAP to establish reliable correspondences.
+    2. GLOMAP Indexing:
+         - Index the matched features with GLOMAP for efficient retrieval and further processing.
+    3. Depth Estimation with Unidepth:
+         - Estimate depth maps from the input images using the Unidepth model.
+    4. XM Invocation:
+         - Call the XM algorithm with the processed 3D observations to compute the desired outputs.
+    5. XM^2 (if needed):
+        - Run the XM^2 algorithm to refine the results obtained from XM.
+
+Usage Note:
+    Ensure that the images and intrinsic parameters are properly pre-processed and aligned before running this pipeline.
+    The Unidepth model should be correctly configured to obtain reliable depth estimates.
+"""
+
+
 # Run COLMAP feature extracting and matching
 if run_colmap:
     if len(gt_camera) == 1:
@@ -252,7 +275,8 @@ else:
         print("No data found, please run the depth estimation first.")
         exit()
 
-######################    
+#############################
+# You may add your own filter to improve data quality
 # YOUR OWN FILTER HERE
 ######################
 
@@ -276,6 +300,9 @@ N = s_real.shape[0]
 M = p_est.shape[1]
 
 # XM^2
+# some times the result is not good, so we need to remove some outliers
+# this is basically a robust outlier removal, you delete landmarks that has the largest error
+
 src_idx = edges[:, 0] - 1  # Convert from 1-based to 0-based indexing
 dst_idx = edges[:, 1] - 1
 
@@ -294,7 +321,7 @@ error = weights * squared_distances
 
 print("sum of error: ", np.sum(error))
 
-threshold = np.percentile(error, 90)  # 85th percentile
+threshold = np.percentile(error, 90)  # 90th percentile
 
 indices_to_remove = np.where(error > threshold)[0] 
 

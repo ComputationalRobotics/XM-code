@@ -102,6 +102,8 @@ Now you can run [example4](./4_test_unidepth.py) and [example5](./5_test_ceres.p
 
 ## STEP 3: Check examples
 
+We recommend that you read examples 1 through 5 in order.
+
 ### Example 1
 
 This is purely XM solver, the input is the $Q$ matrix as detailed in our paper, the output is the rotation and scale of each camera.

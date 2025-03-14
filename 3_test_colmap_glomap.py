@@ -32,7 +32,7 @@ database_path = output_path + "/database.db"
 if not os.path.exists(output_path):
     os.makedirs(output_path)
     
-# Decide which one to run
+# Decide which one to run, if you want to save middle results you can use this
 # input: image
 run_colmap = 1
 # input: database
@@ -40,9 +40,28 @@ run_glomap = 1
 # input: view graph + 2D observations
 run_depth = 1
 
-# load camera information and gt poses (if needed)
+# load camera information (must) and gt poses (if needed)
+# you may need to modify this part according to your dataset
 gt = load_replica_gt(dataset_path)
 gt_camera = load_replica_camera(dataset_path)
+
+"""
+File Purpose:
+    This file processes input data consisting of images, depth maps, and camera intrinsic parameters.
+    The overall processing pipeline is as follows:
+
+    1. COLMAP Matching:
+         - Perform feature matching across the input images using COLMAP to establish reliable correspondences.
+    2. GLOMAP Indexing:
+         - Index the matched features with GLOMAP for efficient retrieval and further processing.
+    3. 2D to 3D Lifting:
+         - Use the ground truth depth maps to lift 2D feature observations into 3D space.
+    4. XM Invocation:
+         - Call the XM algorithm with the processed 3D observations to compute the desired outputs.
+
+Usage Note:
+    Ensure that the images, depth maps, and intrinsic parameters are properly pre-processed and aligned before running this pipeline.
+"""
 
 # Run COLMAP feature extracting and matching
 if run_colmap:
@@ -138,6 +157,7 @@ if run_glomap:
     delete_observation = delete_observation - matches.shape[0]
     print("delete same observation:  ", delete_observation)  
     
+    # Output the adjacency matrix for the bipartite view graph.
     vis = coo_matrix((np.ones(matches.shape[0], dtype=int), (matches[:, 0].astype(int)-1, matches[:, 3].astype(int)-1))).tocsr()
     landmarkx = coo_matrix((matches[:, 1], (matches[:, 0].astype(int)-1, matches[:, 3].astype(int)-1))).tocsr()
     landmarky = coo_matrix((matches[:, 2], (matches[:, 0].astype(int)-1, matches[:, 3].astype(int)-1))).tocsr()
@@ -226,7 +246,10 @@ else:
         print("No data found, please run the depth estimation first.")
         exit()
         
+#############################
+# You may add your own filter to improve data quality
 # YOUR OWN FILTER HERE
+
 
 # send it to XM
 # check is the view-graph is connected
