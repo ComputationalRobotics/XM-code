@@ -69,7 +69,7 @@ def create_matrix(weight, edges, landmarks, output_path):
     observation_index = coo_matrix((np.arange(1, len(edges) + 1), (edges[:, 0]-1, edges[:, 1]-1)), shape=(N, M)).tocsr()
 
     Q2 = diags(V3.sum(axis=1).A1, format='csr')
-    Q3 = diags(V3.sum(axis=0).A1, format='csr')
+    Q3 = diags(V3.sum(axis=0).A1, format='csr')  
 
     # Initialize sparse matrices
     Q1 = np.zeros((3 * N, 3 * N))

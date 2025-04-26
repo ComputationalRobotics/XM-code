@@ -12,6 +12,7 @@ convex optimization. This repositary implement XM and its whole structure from m
 
 - [ ] Enable joint estimation on camera intrinsics.
 - [ ] Speed up on preprocess part.
+- [x] `04.23.2025`: RSS camera ready.
 - [x] `12.03.2025`: Release beta version.
 
 
@@ -71,6 +72,11 @@ cmake .. -GNinja
 ninja && sudo ninja install
 cd ../../../
 ```
+
+### Install TEASER++
+
+For those who what to try experiment in our XM paper, you need to install [TEASER++](https://github.com/MIT-SPARK/TEASER-plusplus) to calculate accuracy. Otherwise you can comment the last part of our code.
+
 Now you can run [example3](./3_test_colmap_glomap.py)
 
 ### Install Depth Estimation Model
@@ -123,6 +129,18 @@ We add Unidepth to estimate depth information instead of ground truth depth. We 
 ### Example 5
 
 If you still find the result not accurate enough, try to run Ceres after XM. Note this is only needed when you 2D matching is accurate but you 3D estimation is bad.
+
+## Option 1: Run the experiment in paper
+
+If you want to run the experiment in paper, please also install [TEASER](https://github.com/MIT-SPARK/TEASER-plusplus). Note the run time can vary a lot for different GPUs. Please download dataset from [Google Drive](https://drive.google.com/drive/folders/13_2mcKGKVU0ibWck2n4ajUrN2MaDfR7y?usp=sharing) and uncompress it in `assets/Experiment` folder. We test several datasets in XM paper:
+
+[BAL](https://grail.cs.washington.edu/projects/bal/) datasets: Please use our pre-processed data since we down-sampled from the original datasets.
+
+[Replica](https://github.com/cvg/nice-slam) datasets: download from nice-slam repository, contains ground truth pose and depth.
+
+[IMC](https://www.cs.ubc.ca/research/image-matching-challenge/current/) and [MipNeRF](https://jonbarron.info/mipnerf360/) datasets: contains images and ground truth pose
+
+[TUM](https://cvg.cit.tum.de/data/datasets/rgbd-dataset/download) datasets: images and ground truth in given time stamps.
 
 
 

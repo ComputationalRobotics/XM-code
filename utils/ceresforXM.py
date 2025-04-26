@@ -86,4 +86,4 @@ def XM_Ceres_interface(edges, landmarks2D, R_XM, t_XM, p_XM, only_landmarks=Fals
     t_est = np.zeros((3,N))
     for i in range(N):
         t_est[:,i] = -R_est[:,3*i:3*i+3] @ t[i]  
-    return R_est, t_est, p_est, summary.total_time_in_seconds
+    return R_est, t_est, p_est, summary.total_time_in_seconds, summary.final_cost

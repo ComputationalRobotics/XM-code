@@ -14,13 +14,15 @@ def delete_thereshold(min_threshold, M, data):
 
 def checklandmarks(edges, landmarks, weights, rgbs, N, M):
     # delete and reindex the frames that contains zero landmarks
-    max_frame, N, indices_frame = delete_thereshold(0, N, edges[:,0]-1)
+    # Note: change the thereshold higher if you do not get good result, e.g. IMC gate
+    max_frame, N, indices_frame = delete_thereshold(10, N, edges[:,0]-1)
 
     # exchange the first frame
     if indices_frame[max_frame] != 0:
         indices_frame[indices_frame == 0] = indices_frame[max_frame]
         indices_frame[max_frame] = 0
-        
+
+    indices_all = indices_frame.copy()  
     edges[:,0] = indices_frame[edges[:,0]-1].copy() + 1
     # delete the row that edges contain -1
     indices = np.any(edges == 0, axis=1)
@@ -30,6 +32,7 @@ def checklandmarks(edges, landmarks, weights, rgbs, N, M):
     rgbs = rgbs[~indices]
 
     # delete and reindex the landmarks that contains one frame
+    # Note: change the thereshold higher if you do not get good result, e.g. IMC gate
     _, M, indices_landmarks = delete_thereshold(1, M, edges[:,1]-1)
     edges[:,1] = indices_landmarks[edges[:,1]-1].copy() + 1
     # delete the row that edges contain -1
@@ -59,8 +62,14 @@ def checklandmarks(edges, landmarks, weights, rgbs, N, M):
         landmarks = landmarks[filtered_indices]
         _, N, indices_frame = delete_thereshold(0, N, edges[:,0]-1)
         edges[:,0] = indices_frame[edges[:,0]-1].copy() + 1
+
+        N_old = np.where(indices_all > -1)[0].shape[0]
+        indices_all_copy = indices_all.copy()
+        for i in range(N_old):
+            indices_all[np.where(indices_all_copy == i)[0]] = indices_frame[i]
+        
         _, M, indices_landmarks = delete_thereshold(0, M, edges[:,1]-1)
         edges[:,1] = indices_landmarks[edges[:,1]-1].copy() + 1
         # here do not need to delete edges because we already know the graph is connected
         
-    return edges, landmarks, weights, rgbs
+    return edges, landmarks, weights, rgbs, indices_all

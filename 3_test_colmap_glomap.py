@@ -9,6 +9,11 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import cv2
+import open3d as o3d
+import random
+import pickle
+import itertools
+from scipy.stats import trim_mean
 
 import XM
 
@@ -21,12 +26,23 @@ from utils.creatematrix import create_matrix
 from utils.io import save_matrix_to_bin, load_matrix_from_bin
 from utils.recoversolution import recover_XM
 from utils.visualization import visualize_camera, visualize
+from utils.error import ATE_TEASER_C2W
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-print( os.path.abspath(os.path.join(current_dir, "./assets/Replica/images")))
-image_dir = os.path.abspath(os.path.join(current_dir, "./assets/Replica/images"))
-dataset_path = os.path.abspath(os.path.join(current_dir, "./assets/Replica/"))
-output_path = os.path.abspath(os.path.join(current_dir, "./assets/Replica/output"))
+
+############################
+# For experiment in paper only
+# download the dataset from:
+# https://drive.google.com/drive/folders/13_2mcKGKVU0ibWck2n4ajUrN2MaDfR7y?usp=sharing
+# and put it in the folder './assets/Experiment/**'
+############################
+
+# # Replica Datasets: REProom0_100, REProom1_100, REPoffice0_100, REPoffice1_100,REProom0, REProom1, REPoffice0, REPoffice1
+# dataset_path = os.path.abspath(os.path.join(current_dir, "./assets/Experiment/Replica/REProom0_100"))
+dataset_path = os.path.abspath(os.path.join(current_dir, "./assets/SIMPLE3"))
+
+image_dir = dataset_path + '/images'
+output_path = dataset_path + '/output'
 database_path = output_path + "/database.db"
 
 if not os.path.exists(output_path):
@@ -58,6 +74,8 @@ File Purpose:
          - Use the ground truth depth maps to lift 2D feature observations into 3D space.
     4. XM Invocation:
          - Call the XM algorithm with the processed 3D observations to compute the desired outputs.
+    5. XM^2 (if needed):
+         - Run the XM^2 algorithm to refine the results obtained from XM.
 
 Usage Note:
     Ensure that the images, depth maps, and intrinsic parameters are properly pre-processed and aligned before running this pipeline.
@@ -68,7 +86,10 @@ if run_colmap:
     if len(gt_camera) == 1:
         # single camera
         ImageReaderOptions = pycolmap.ImageReaderOptions()
-        ImageReaderOptions.camera_params = '600,600,599.5,339.5'
+        print("Camera model: ", gt_camera[1]["model"])
+        params = gt_camera[1]["params"]  # e.g., np.array([600, 600, 599.5, 339.5])
+        param_str = ','.join(map(str, params))
+        ImageReaderOptions.camera_params = param_str
         pycolmap.extract_features(database_path, image_dir,camera_mode = pycolmap.CameraMode.SINGLE, camera_model="PINHOLE",reader_options=ImageReaderOptions)
     else:
         # if you have different cameras, may refer to COLMAP document about how to use intrinsics
@@ -136,6 +157,9 @@ if run_glomap:
         R = quat2rot(relpose[i, 2], relpose[i, 3], relpose[i, 4], relpose[i, 5])
         t = relpose[i, 6:9]
         glomap_pose[(image_id1, image_id2)] = (R, t)  
+    
+    with open(output_path + "/glomap_pose.pkl", "wb") as file:
+        pickle.dump(glomap_pose, file)
         
     np.save(output_path + "/filename.npy", filename)
 
@@ -249,17 +273,83 @@ else:
 #############################
 # You may add your own filter to improve data quality
 # YOUR OWN FILTER HERE
-
+#############################
 
 # send it to XM
 # check is the view-graph is connected
-edges, landmarks, weights, rgbs = checklandmarks(edges, landmarks, weights, rgbs, N, M)
+edges, landmarks, weights, rgbs, indices = checklandmarks(edges, landmarks, weights, rgbs, N, M)
+indices_all = indices.copy()
 
 create_matrix(weights, edges, landmarks, output_path)
 lam = edges.shape[0] / N
-XM.solve(output_path, 5, 1e-3, lam, 1000)
+XM.solve(output_path, 5, 1e-1, lam, 1000)
 
 # visualize the camera poses
+Abar,_ = load_matrix_from_bin(output_path + '/Abar.bin')
+R,_ = load_matrix_from_bin(output_path + '/R.bin')
+s,_ = load_matrix_from_bin(output_path + '/s.bin')
+Q,_ = load_matrix_from_bin(output_path + '/Q.bin')        
+
+# recover p and t
+R_real, s_real, p_est, t_est = recover_XM(Q, R, s, Abar, lam)
+
+N = s_real.shape[0]
+M = p_est.shape[1]
+
+# XM^2
+# some times the result is not good, so we need to remove some outliers
+# this is basically a robust outlier removal, you delete landmarks that has the largest error
+
+src_idx = edges[:, 0] - 1  # Convert from 1-based to 0-based indexing
+dst_idx = edges[:, 1] - 1
+
+R_real = R_real.reshape(3, N, 3).transpose(1, 0, 2)  # Shape: (M, 3, 3)
+
+# Extract the correct 3x3 rotation matrices
+R_matrices = R_real[src_idx]  # Shape: (N, 3, 3)
+
+# Compute transformed landmarks
+landmarks_transformed = (s_real[src_idx, None] * np.einsum('nij,nj->ni', R_matrices, landmarks)) + t_est[:, src_idx].T
+
+diff = (p_est[:, dst_idx].T - landmarks_transformed)  # Ensure shapes match
+squared_distances = np.sum(diff**2, axis=1)
+
+error = weights * squared_distances
+
+print("sum of error: ", np.sum(error))
+
+threshold = np.percentile(error, 90)  # 90th percentile
+
+indices_to_remove = np.where(error > threshold)[0] 
+
+edges = np.delete(edges, indices_to_remove, axis=0)  
+weights = np.delete(weights, indices_to_remove)
+rgbs = np.delete(rgbs, indices_to_remove, axis=0)
+landmarks = np.delete(landmarks, indices_to_remove, axis=0)
+
+# second run
+edges, landmarks, weights, rgbs, indices = checklandmarks(edges, landmarks, weights, rgbs, N, M)
+N_old = np.where(indices_all > -1)[0].shape[0]
+indices_all_copy = indices_all.copy()
+for i in range(N_old):
+    indices_all[np.where(indices_all_copy == i)[0]] = indices[i]
+
+
+create_matrix(weights, edges, landmarks, output_path)
+lam = 0.0
+XM.solve_rank3(output_path, 3, 1e-1, lam, 1000)
+s,_ = load_matrix_from_bin(output_path + '/s.bin')
+s_avg = np.mean(s[1:])
+s_std = np.std(s[1:])
+# decide whether add regularization term
+if np.abs(s_avg - 1)> 2 * s_std or np.sum(s < 0.1) > 10:
+    print("s is too small, run again")
+    lam = edges.shape[0] / N
+    XM.solve(output_path, 5, 1e-1, lam, 1000)
+else:
+    print("s is good")
+    XM.solve(output_path, 5, 1e-1, lam, 1000)
+
 Abar,_ = load_matrix_from_bin(output_path + '/Abar.bin')
 R,_ = load_matrix_from_bin(output_path + '/R.bin')
 s,_ = load_matrix_from_bin(output_path + '/s.bin')
@@ -289,5 +379,72 @@ mean_rgbs = mean_rgbs[:, [2, 1, 0]]
 
 # visualize all
 visualize(extrinsics, p_est.T, mean_rgbs/255.0)
+
+# accuracy
+# comment this and the corresponding import if you do not need this
+data_RPE_R = []
+data_RPE_T = []
+data_ATE_R = []
+data_ATE_T = []
+t_gt = np.zeros((3, N))
+R_gt = np.zeros((3, 3 * N))
+for i in range(N):
+    i_index = np.where(indices_all == i)[0][0]
+    t_gt[:,i] = gt[filename[i_index]]["t"]  
+    R_gt[:,3*i:3*i+3] = gt[filename[i_index]]["R"]
+
+avg_t_gt = np.mean(t_gt,axis=1)
+cov_t_gt = np.mean(np.linalg.norm(t_gt - avg_t_gt.reshape(3,1),axis=0))
+
+s_g, R_g, t_g = ATE_TEASER_C2W(R_real,t_est,R_gt,t_gt)
+
+ATE_R = np.zeros(N)
+ATE_T = np.zeros(N)
+
+for i in range(N):
+    cosvalue = (np.trace(R_g @ R_real[:,3*i:3*i+3] @ R_gt[:,3*i:3*i+3])-1)/2
+    ATE_R[i] = np.abs(np.arccos(min(max(cosvalue,-1),1)))
+    ATE_T[i] = np.linalg.norm((s_g * R_g @ t_est[:,i] + t_g.flatten())-R_gt[:,3*i:3*i+3].T @ (-t_gt[:,i]))
+    
+RPE_R = []
+RPE_t = []
+for i in range(N):
+    if N > 1000:
+        for j in random.sample(list(np.arange(N)), 100):
+            cosvalue = (np.trace(R_gt[:,3*i:3*i+3] @ R_gt[:,3*j:3*j+3].T @ R_real[:,3*j:3*j+3].T @  R_real[:,3*i:3*i+3])-1)/2
+            RPE_R.append(np.abs(np.arccos(min(max(cosvalue,-1),1))))
+            RPE_t.append(np.linalg.norm(- R_gt[:,3*i:3*i+3].T @ t_gt[:,i] + R_gt[:,3*j:3*j+3].T @ t_gt[:,j] - s_g * R_g @ (t_est[:,i] - t_est[:,j])))
+    else:
+        for j in range(i):
+            cosvalue = (np.trace(R_gt[:,3*i:3*i+3] @ R_gt[:,3*j:3*j+3].T @ R_real[:,3*j:3*j+3].T @  R_real[:,3*i:3*i+3])-1)/2
+            RPE_R.append(np.abs(np.arccos(min(max(cosvalue,-1),1))))
+            RPE_t.append(np.linalg.norm(- R_gt[:,3*i:3*i+3].T @ t_gt[:,i] + R_gt[:,3*j:3*j+3].T @ t_gt[:,j] - s_g * R_g @ (t_est[:,i] - t_est[:,j])))
+    
+print('RPE-R: ', np.median(RPE_R),'RPE-T: ', np.median(RPE_t)/cov_t_gt,'ATE-R: ', np.median(ATE_R),'ATE-T: ', np.median(ATE_T)/cov_t_gt)
+data_RPE_R.append(np.median(RPE_R))   
+data_RPE_T.append(np.median(RPE_t)/cov_t_gt)
+data_ATE_R.append(np.median(ATE_R))
+data_ATE_T.append(np.median(ATE_T)/cov_t_gt)
+
+print("\stackon{$",
+    np.round(np.median(ATE_T)/cov_t_gt,3), "$}{$", np.round(np.degrees(np.median(ATE_R)),3), "^{\circ}$} & \stackon{$",
+    np.round(np.median(RPE_t)/cov_t_gt,3), "$}{$", np.round(np.degrees(np.median(RPE_R)),3), "^{\circ}$}"
+)
+output_str = (
+    "\stackon{$"
+    f"{np.round(np.median(ATE_T)/cov_t_gt, 3)}"
+    "$}{$"
+    f"{np.round(np.degrees(np.median(ATE_R)), 3)}"
+    "^{\\circ}$} & \\stackon{$"
+    f"{np.round(np.median(RPE_t)/cov_t_gt, 3)}"
+    "$}{$"
+    f"{np.round(np.degrees(np.median(RPE_R)), 3)}"
+    "^{\\circ}$}"
+)
+
+with open(output_path + "/output.txt", "w") as f:
+    f.write(output_str)
+
+
         
     

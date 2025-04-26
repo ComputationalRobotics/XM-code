@@ -47,18 +47,30 @@ def recover_XM(Q,R,s,Abar,lam):
     R1 = R_real[:,:3]
     R_real = R1.T @ R_real
 
-    negative_R = False
+    negative_R = 0
     for i in range(N):
         U, S, Vt = svd(R_real[:,3*i:3*i+3])
 
-        R_real[:,3*i:3*i+3] = U @ Vt
-        sR_real[:,3*i:3*i+3] = s_real[i] * R_real[:,3*i:3*i+3]
-        if np.linalg.det(R_real[:,3*i:3*i+3]) < 0:
-            negative_R = True
+        if np.linalg.det(U @ Vt) < 0:
+            negative_R = negative_R + 1
 
     # not projecting the SO3, sometimes worse than the original in Ceres
-    if negative_R:
+    if negative_R > 0:
         print("warning: some det(R) < 0")
+
+    # judge which is the largest component
+    if negative_R > N / 2:
+        R_real = -R_real
+
+    for i in range(N):
+        U, S, Vt = svd(R_real[:,3*i:3*i+3])
+
+        if np.linalg.det(U @ Vt) < 0:
+            R_real[:,3*i:3*i+3] = U @ Vt
+            sR_real[:,3*i:3*i+3] = s_real[i] * R_real[:,3*i:3*i+3]
+        else:
+            R_real[:,3*i:3*i+3] = U @ Vt
+            sR_real[:,3*i:3*i+3] = s_real[i] * R_real[:,3*i:3*i+3]
         
     # Compute ybar_est
     ybar_est = Abar @ sR_real.T

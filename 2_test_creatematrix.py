@@ -9,11 +9,26 @@ from utils.io import save_matrix_to_bin, load_matrix_from_bin
 from utils.recoversolution import recover_XM
 from utils.visualization import visualize_camera, visualize
 from utils.checkconnection import checklandmarks
+from utils.readgt_BAL import load_BAL_gt
+from utils.error import ATE_TEASER_C2W
 
 import numpy as np
 import networkx as nx
+import random
 
-data, n_observation = load_matrix_from_bin('./assets/3-CreateMatrix/data.bin')
+############################
+# For experiment in paper only
+# download the dataset from:
+# https://drive.google.com/drive/folders/13_2mcKGKVU0ibWck2n4ajUrN2MaDfR7y?usp=sharing
+# and put it in the folder './assets/Experiment/**'
+############################
+
+# # BAL datasets: BAL-93, BAL-392, BAL-1934
+# dataset_path = './assets/Experiment/BAL/BAL-1934'
+
+dataset_path = './assets/SIMPLE2'
+
+data, n_observation = load_matrix_from_bin(dataset_path + '/landmark.bin')
 
 # dalete the row that contains the same edges in view-graph
 edges = data[:,:2].astype(int)
@@ -23,6 +38,8 @@ data = data[unique_indices,:]
 
 weights = data[:,5]
 landmarks = data[:,2:5]
+
+gt = load_BAL_gt(dataset_path)
 
 """
     input data:
@@ -80,6 +97,13 @@ edges = edges[~indices]
 weights = weights[~indices]
 landmarks = landmarks[~indices]
 
+# record the index in origin input data
+indices_all = indices_frame.copy()
+N_old = np.where(indices_all > -1)[0].shape[0]
+indices_all_copy = indices_all.copy()
+for i in range(N_old):
+    indices_all[np.where(indices_all_copy == i)[0]] = indices_frame[i]
+
 # delete and reindex the landmarks that contains one frame
 _, M, indices_landmarks = delete_thereshold(1, M, edges[:,1]-1)
 edges[:,1] = indices_landmarks[edges[:,1]-1].copy() + 1
@@ -109,20 +133,26 @@ if filtered_indices.shape[0] < edges.shape[0]:
     landmarks = landmarks[filtered_indices]
     _, N, indices_frame = delete_thereshold(0, N, edges[:,0]-1)
     edges[:,0] = indices_frame[edges[:,0]-1].copy() + 1
+
+    N_old = np.where(indices_all > -1)[0].shape[0]
+    indices_all_copy = indices_all.copy()
+    for i in range(N_old):
+        indices_all[np.where(indices_all_copy == i)[0]] = indices_frame[i]
+
     _, M, indices_landmarks = delete_thereshold(0, M, edges[:,1]-1)
     edges[:,1] = indices_landmarks[edges[:,1]-1].copy() + 1
     # here do not need to delete edges because we already know the graph is connected
 
 # interface to create the matrix given the edges, weights and landmarks
-create_matrix(weights, edges, landmarks, './assets/3-CreateMatrix')
+create_matrix(weights, edges, landmarks, dataset_path)
 lam = 0.0
-XM.solve('./assets/3-CreateMatrix/', 5, 1e-3, lam, 1000)
+XM.solve(dataset_path, 5, 1e-1, lam, 1000)
 
 # visualize the camera poses
-Abar,_ = load_matrix_from_bin('./assets/3-CreateMatrix/Abar.bin')
-R,_ = load_matrix_from_bin('./assets/3-CreateMatrix/R.bin')
-s,_ = load_matrix_from_bin('./assets/3-CreateMatrix/s.bin')
-Q,_ = load_matrix_from_bin('./assets/3-CreateMatrix/Q.bin')        
+Abar,_ = load_matrix_from_bin(dataset_path + '/Abar.bin')
+R,_ = load_matrix_from_bin(dataset_path + '/R.bin')
+s,_ = load_matrix_from_bin(dataset_path + '/s.bin')
+Q,_ = load_matrix_from_bin(dataset_path + '/Q.bin')        
 
 # recover p and t
 # details refer to our paper
@@ -139,3 +169,48 @@ visualize_camera(extrinsics)
 
 # visualize all
 visualize(extrinsics, p_est.T)
+
+# calculate accuracy
+data_RPE_R = []
+data_RPE_T = []
+data_ATE_R = []
+data_ATE_T = []
+t_gt = np.zeros((3, N))
+R_gt = np.zeros((3, 3 * N))
+for i in range(N):
+    i_index = np.where(indices_all == i)[0][0]
+    t_gt[:,i] = gt[i_index]["t"]  
+    R_gt[:,3*i:3*i+3] = gt[i_index]["R"]
+
+avg_t_gt = np.mean(t_gt,axis=1)
+cov_t_gt = np.mean(np.linalg.norm(t_gt - avg_t_gt.reshape(3,1),axis=0))
+
+s_g, R_g, t_g = ATE_TEASER_C2W(R_real,t_est,R_gt,t_gt)
+
+ATE_R = np.zeros(N)
+ATE_T = np.zeros(N)
+
+for i in range(N):
+    cosvalue = (np.trace(R_g @ R_real[:,3*i:3*i+3] @ R_gt[:,3*i:3*i+3])-1)/2
+    ATE_R[i] = np.abs(np.arccos(min(max(cosvalue,-1),1)))
+    ATE_T[i] = np.linalg.norm((s_g * R_g @ t_est[:,i] + t_g.flatten())-R_gt[:,3*i:3*i+3].T @ (-t_gt[:,i]))
+    
+RPE_R = []
+RPE_t = []
+for i in range(N):
+    if N > 1000:
+        for j in random.sample(list(np.arange(N)), 100):
+            cosvalue = (np.trace(R_gt[:,3*i:3*i+3] @ R_gt[:,3*j:3*j+3].T @ R_real[:,3*j:3*j+3].T @  R_real[:,3*i:3*i+3])-1)/2
+            RPE_R.append(np.abs(np.arccos(min(max(cosvalue,-1),1))))
+            RPE_t.append(np.linalg.norm(- R_gt[:,3*i:3*i+3].T @ t_gt[:,i] + R_gt[:,3*j:3*j+3].T @ t_gt[:,j] - s_g * R_g @ (t_est[:,i] - t_est[:,j])))
+    else:
+        for j in range(i):
+            cosvalue = (np.trace(R_gt[:,3*i:3*i+3] @ R_gt[:,3*j:3*j+3].T @ R_real[:,3*j:3*j+3].T @  R_real[:,3*i:3*i+3])-1)/2
+            RPE_R.append(np.abs(np.arccos(min(max(cosvalue,-1),1))))
+            RPE_t.append(np.linalg.norm(- R_gt[:,3*i:3*i+3].T @ t_gt[:,i] + R_gt[:,3*j:3*j+3].T @ t_gt[:,j] - s_g * R_g @ (t_est[:,i] - t_est[:,j])))
+    
+print('RPE-R: ', np.median(RPE_R),'RPE-T: ', np.median(RPE_t)/cov_t_gt,'ATE-R: ', np.median(ATE_R),'ATE-T: ', np.median(ATE_T)/cov_t_gt)
+data_RPE_R.append(np.median(RPE_R))   
+data_RPE_T.append(np.median(RPE_t)/cov_t_gt)
+data_ATE_R.append(np.median(ATE_R))
+data_ATE_T.append(np.median(ATE_T)/cov_t_gt)

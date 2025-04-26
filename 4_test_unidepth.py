@@ -30,10 +30,11 @@ from utils.recoversolution import recover_XM
 from utils.visualization import visualize_camera, visualize
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-print( os.path.abspath(os.path.join(current_dir, "./assets/Replica/images")))
-image_dir = os.path.abspath(os.path.join(current_dir, "./assets/Replica/images"))
-dataset_path = os.path.abspath(os.path.join(current_dir, "./assets/Replica/"))
-output_path = os.path.abspath(os.path.join(current_dir, "./assets/Replica/output"))
+
+dataset_path = os.path.abspath(os.path.join(current_dir, "./assets/SIMPLE3"))
+
+image_dir = dataset_path + '/images'
+output_path = dataset_path + '/output'
 database_path = output_path + "/database.db"
 
 if not os.path.exists(output_path):
@@ -79,7 +80,10 @@ if run_colmap:
     if len(gt_camera) == 1:
         # single camera
         ImageReaderOptions = pycolmap.ImageReaderOptions()
-        ImageReaderOptions.camera_params = '600,600,599.5,339.5'
+        print("Camera model: ", gt_camera[1]["model"])
+        params = gt_camera[1]["params"]  # e.g., np.array([600, 600, 599.5, 339.5])
+        param_str = ','.join(map(str, params))
+        ImageReaderOptions.camera_params = param_str
         pycolmap.extract_features(database_path, image_dir,camera_mode = pycolmap.CameraMode.SINGLE, camera_model="PINHOLE",reader_options=ImageReaderOptions)
     else:
         # if you have different cameras, may refer to COLMAP document about how to use intrinsics
@@ -127,9 +131,9 @@ if run_glomap:
 
     # after running GLOMAP will output three .txt file in the assets/tempdata/ folder
 
-    matches = np.loadtxt(os.path.abspath(os.path.join(current_dir, "../../assets/tempdata/output.txt"))) 
-    File3 = pd.read_table(os.path.abspath(os.path.join(current_dir, "../../assets/tempdata/filename.txt")), header=None, names=["Var1", "Var2"], sep='\s+')
-    relpose = np.loadtxt(os.path.abspath(os.path.join(current_dir, "../../assets/tempdata/relative_pose.txt")))
+    matches = np.loadtxt(os.path.abspath(os.path.join(current_dir, "./assets/tempdata/output.txt"))) 
+    File3 = pd.read_table(os.path.abspath(os.path.join(current_dir, "./assets/tempdata/filename.txt")), header=None, names=["Var1", "Var2"], sep='\s+')
+    relpose = np.loadtxt(os.path.abspath(os.path.join(current_dir, "./assets/tempdata/relative_pose.txt")))
 
     File3 = File3.sort_values(by="Var1").reset_index(drop=True)
 
@@ -282,7 +286,7 @@ else:
 
 # send it to XM
 # check is the view-graph is connected
-edges, landmarks, weights, rgbs = checklandmarks(edges, landmarks, weights, rgbs, N, M)
+edges, landmarks, weights, rgbs, indices_all = checklandmarks(edges, landmarks, weights, rgbs, N, M)
 
 create_matrix(weights, edges, landmarks, output_path)
 lam = edges.shape[0] / N
@@ -376,7 +380,7 @@ rgbs = np.delete(rgbs, indices_to_remove, axis=0)
 landmarks = np.delete(landmarks, indices_to_remove, axis=0)
 
 # second run
-edges, landmarks, weights, rgbs = checklandmarks(edges, landmarks, weights, rgbs, N, M)
+edges, landmarks, weights, rgbs, indices_all = checklandmarks(edges, landmarks, weights, rgbs, N, M)
 
 create_matrix(weights, edges, landmarks, output_path)
 lam = 0.0
