@@ -1,6 +1,6 @@
 # XM: Build Rome With Convex Optimization
 
-## [Website](https://computationalrobotics.seas.harvard.edu/XM/)|[Paper](https://computationalrobotics.seas.harvard.edu/XM/static/XM.pdf)|[Arxiv](https://arxiv.org/abs/2502.04640)
+## [Website](https://computationalrobotics.seas.harvard.edu/XM/)|[Paper](https://arxiv.org/abs/2502.04640)
 
 ## About
 
@@ -13,7 +13,7 @@ convex optimization. This repositary implement XM and its whole structure from m
 - [ ] Enable joint estimation on camera intrinsics.
 - [ ] Speed up on preprocess part.
 - [x] `04.23.2025`: RSS camera ready.
-- [x] `12.03.2025`: Release beta version.
+- [x] `03.12.2025`: Release beta version.
 
 
 ## STEP 1: Decide what to build
