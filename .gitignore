@@ -14,7 +14,11 @@ assets/SIMPLE1/output/
 assets/SIMPLE2/output/
 assets/SIMPLE3/output/
 assets/SIMPLE4/output/
-assets/Experiment/*
+assets/Experiment/IMC
+assets/Experiment/BAL
+assets/Experiment/MipNerf
+assets/Experiment/Replica
+assets/Experiment/TUM
 assets/tempdata/*
 
 # other script I used
