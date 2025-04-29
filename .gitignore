@@ -19,7 +19,6 @@ assets/Experiment/BAL
 assets/Experiment/MipNerf
 assets/Experiment/Replica
 assets/Experiment/TUM
-assets/tempdata/*
 
 # other script I used
 rebuttle_initialization.py
