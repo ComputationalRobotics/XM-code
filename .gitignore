@@ -1,15 +1,23 @@
+# global
 XM/build/
 utils/__pycache__/
+
+# deps
 deps/glomap/build/
 deps/colmap/
 deps/UniDepth/
 deps/pyceres/
 deps/TEASER-plusplus/
+
+# assets
 assets/SIMPLE1/output/
 assets/SIMPLE2/output/
 assets/SIMPLE3/output/
 assets/SIMPLE4/output/
 assets/Experiment/*
+assets/tempdata/*
+
+# other script I used
 rebuttle_initialization.py
 rebuttle_noise.py
 rebuttle_plot.py

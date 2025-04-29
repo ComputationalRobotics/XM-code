@@ -18,12 +18,17 @@ convex optimization. This repositary implement XM and its whole structure from m
 
 ## STEP 1: Decide what to build
 - If you already have the observation of 3D landmarks in each camera frame, you can directly pass the view-graph and observations to XM solver. See [example2](./2_test_creatematrix.py)
-  - If you found the result is not good, that is because the observation have too much noise (solver will converge to global optimal, but the quality of observation indeed influence accuracy). You can refer to [example4](./4_test_unidepth.py) and [example5](./5_test_ceres.py) to use XM $^2$ and Ceres refinement. More detials can refer to our paper.
+  - If you found the result is not good, that is because the observation have too much noise (solver will converge to global optimal, but the quality of observation indeed influence accuracy). You can refer to [example4](./4_test_unidepth.py) and [example5](./5_test_ceres.py) to use XM $^2$ and Ceres refinement. More details can refer to our paper.
 - If you have images, intrinsics of cameras and corresponding depth map, you will need to install [COLMAP](https://colmap.github.io/) and [GLOMAP](https://github.com/colmap/glomap) to match corresponding feature and create view-graph.
 - If you only have images and intrinsics, you will also need to install depth model to estimate depth map. Here we use [Unidepth](https://github.com/lpiccinelli-eth/UniDepth).
 - If you do not have intrinsics: TODO. We are working on this right now.
 
-## STEP 2: Installation
+## STEP 2: Resources
+
+Before installation you need to download the test dataset from [Google Drive for Datasets](https://drive.google.com/drive/folders/13_2mcKGKVU0ibWck2n4ajUrN2MaDfR7y?usp=share_link). The `SIMPLE1` & `SIMPLE2` datasets are binary files that can directly sent to our solver. 
+And `SIMPLE3` & `SIMPLE4` are image datasets. There are also datasets that you can put in `assets/Experiment/` folder to check the accuracy in paper. All datasets should be under `assets` folder, e.g. `assets/SIMPLE1` or `assets/Experiment/BAL`
+
+## STEP 3: Installation
 
 ### Install Python environment
 After clone the XM repo, make sure you are in the root path of XM folder, and run these in terminal:
@@ -106,7 +111,7 @@ pip install -e . --extra-index-url https://download.pytorch.org/whl/cu124
 
 Now you can run [example4](./4_test_unidepth.py) and [example5](./5_test_ceres.py).
 
-## STEP 3: Check examples
+## STEP 4: Check examples
 
 We recommend that you read examples 1 through 5 in order.
 

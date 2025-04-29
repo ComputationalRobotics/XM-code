@@ -10,7 +10,7 @@ from utils.recoversolution import recover_XM
 from utils.visualization import visualize_camera, visualize
 from utils.checkconnection import checklandmarks
 from utils.readgt_BAL import load_BAL_gt
-from utils.error import ATE_TEASER_C2W
+# from utils.error import ATE_TEASER_C2W
 
 import numpy as np
 import networkx as nx
@@ -170,47 +170,48 @@ visualize_camera(extrinsics)
 # visualize all
 visualize(extrinsics, p_est.T)
 
-# calculate accuracy
-data_RPE_R = []
-data_RPE_T = []
-data_ATE_R = []
-data_ATE_T = []
-t_gt = np.zeros((3, N))
-R_gt = np.zeros((3, 3 * N))
-for i in range(N):
-    i_index = np.where(indices_all == i)[0][0]
-    t_gt[:,i] = gt[i_index]["t"]  
-    R_gt[:,3*i:3*i+3] = gt[i_index]["R"]
+# uncomment this if you need to check the accuracy
+# # calculate accuracy
+# data_RPE_R = []
+# data_RPE_T = []
+# data_ATE_R = []
+# data_ATE_T = []
+# t_gt = np.zeros((3, N))
+# R_gt = np.zeros((3, 3 * N))
+# for i in range(N):
+#     i_index = np.where(indices_all == i)[0][0]
+#     t_gt[:,i] = gt[i_index]["t"]  
+#     R_gt[:,3*i:3*i+3] = gt[i_index]["R"]
 
-avg_t_gt = np.mean(t_gt,axis=1)
-cov_t_gt = np.mean(np.linalg.norm(t_gt - avg_t_gt.reshape(3,1),axis=0))
+# avg_t_gt = np.mean(t_gt,axis=1)
+# cov_t_gt = np.mean(np.linalg.norm(t_gt - avg_t_gt.reshape(3,1),axis=0))
 
-s_g, R_g, t_g = ATE_TEASER_C2W(R_real,t_est,R_gt,t_gt)
+# s_g, R_g, t_g = ATE_TEASER_C2W(R_real,t_est,R_gt,t_gt)
 
-ATE_R = np.zeros(N)
-ATE_T = np.zeros(N)
+# ATE_R = np.zeros(N)
+# ATE_T = np.zeros(N)
 
-for i in range(N):
-    cosvalue = (np.trace(R_g @ R_real[:,3*i:3*i+3] @ R_gt[:,3*i:3*i+3])-1)/2
-    ATE_R[i] = np.abs(np.arccos(min(max(cosvalue,-1),1)))
-    ATE_T[i] = np.linalg.norm((s_g * R_g @ t_est[:,i] + t_g.flatten())-R_gt[:,3*i:3*i+3].T @ (-t_gt[:,i]))
+# for i in range(N):
+#     cosvalue = (np.trace(R_g @ R_real[:,3*i:3*i+3] @ R_gt[:,3*i:3*i+3])-1)/2
+#     ATE_R[i] = np.abs(np.arccos(min(max(cosvalue,-1),1)))
+#     ATE_T[i] = np.linalg.norm((s_g * R_g @ t_est[:,i] + t_g.flatten())-R_gt[:,3*i:3*i+3].T @ (-t_gt[:,i]))
     
-RPE_R = []
-RPE_t = []
-for i in range(N):
-    if N > 1000:
-        for j in random.sample(list(np.arange(N)), 100):
-            cosvalue = (np.trace(R_gt[:,3*i:3*i+3] @ R_gt[:,3*j:3*j+3].T @ R_real[:,3*j:3*j+3].T @  R_real[:,3*i:3*i+3])-1)/2
-            RPE_R.append(np.abs(np.arccos(min(max(cosvalue,-1),1))))
-            RPE_t.append(np.linalg.norm(- R_gt[:,3*i:3*i+3].T @ t_gt[:,i] + R_gt[:,3*j:3*j+3].T @ t_gt[:,j] - s_g * R_g @ (t_est[:,i] - t_est[:,j])))
-    else:
-        for j in range(i):
-            cosvalue = (np.trace(R_gt[:,3*i:3*i+3] @ R_gt[:,3*j:3*j+3].T @ R_real[:,3*j:3*j+3].T @  R_real[:,3*i:3*i+3])-1)/2
-            RPE_R.append(np.abs(np.arccos(min(max(cosvalue,-1),1))))
-            RPE_t.append(np.linalg.norm(- R_gt[:,3*i:3*i+3].T @ t_gt[:,i] + R_gt[:,3*j:3*j+3].T @ t_gt[:,j] - s_g * R_g @ (t_est[:,i] - t_est[:,j])))
+# RPE_R = []
+# RPE_t = []
+# for i in range(N):
+#     if N > 1000:
+#         for j in random.sample(list(np.arange(N)), 100):
+#             cosvalue = (np.trace(R_gt[:,3*i:3*i+3] @ R_gt[:,3*j:3*j+3].T @ R_real[:,3*j:3*j+3].T @  R_real[:,3*i:3*i+3])-1)/2
+#             RPE_R.append(np.abs(np.arccos(min(max(cosvalue,-1),1))))
+#             RPE_t.append(np.linalg.norm(- R_gt[:,3*i:3*i+3].T @ t_gt[:,i] + R_gt[:,3*j:3*j+3].T @ t_gt[:,j] - s_g * R_g @ (t_est[:,i] - t_est[:,j])))
+#     else:
+#         for j in range(i):
+#             cosvalue = (np.trace(R_gt[:,3*i:3*i+3] @ R_gt[:,3*j:3*j+3].T @ R_real[:,3*j:3*j+3].T @  R_real[:,3*i:3*i+3])-1)/2
+#             RPE_R.append(np.abs(np.arccos(min(max(cosvalue,-1),1))))
+#             RPE_t.append(np.linalg.norm(- R_gt[:,3*i:3*i+3].T @ t_gt[:,i] + R_gt[:,3*j:3*j+3].T @ t_gt[:,j] - s_g * R_g @ (t_est[:,i] - t_est[:,j])))
     
-print('RPE-R: ', np.median(RPE_R),'RPE-T: ', np.median(RPE_t)/cov_t_gt,'ATE-R: ', np.median(ATE_R),'ATE-T: ', np.median(ATE_T)/cov_t_gt)
-data_RPE_R.append(np.median(RPE_R))   
-data_RPE_T.append(np.median(RPE_t)/cov_t_gt)
-data_ATE_R.append(np.median(ATE_R))
-data_ATE_T.append(np.median(ATE_T)/cov_t_gt)
+# print('RPE-R: ', np.median(RPE_R),'RPE-T: ', np.median(RPE_t)/cov_t_gt,'ATE-R: ', np.median(ATE_R),'ATE-T: ', np.median(ATE_T)/cov_t_gt)
+# data_RPE_R.append(np.median(RPE_R))   
+# data_RPE_T.append(np.median(RPE_t)/cov_t_gt)
+# data_ATE_R.append(np.median(ATE_R))
+# data_ATE_T.append(np.median(ATE_T)/cov_t_gt)
