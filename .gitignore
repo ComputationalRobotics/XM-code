@@ -10,7 +10,8 @@ deps/pyceres/
 deps/TEASER-plusplus/
 
 # assets
-assets/SIMPLE1/output/
+assets/SIMPLE1/R.bin
+assets/SIMPLE1/s.bin
 assets/SIMPLE2/output/
 assets/SIMPLE3/output/
 assets/SIMPLE4/output/

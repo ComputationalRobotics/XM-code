@@ -197,6 +197,8 @@ bool checkeig(opt_var &C, const opt_var &sR, const double lam, opt_var &v, doubl
     memcpy(Acell_Eigen.innerIndexPtr(), Acellrow.data(), nnz * sizeof(int));
     memcpy(Acell_Eigen.outerIndexPtr(), AcellcolCSC.data(), (5 * n + 2) * sizeof(int));
 
+    Acell_Eigen.makeCompressed();
+
     Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double>> solver;
 
     auto start_decomp = std::chrono::high_resolution_clock::now();
