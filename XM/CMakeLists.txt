@@ -25,7 +25,6 @@ add_compile_options(-Wno-unknown-pragmas)
 
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
-add_definitions(-DEIGEN_NO_CUDA)
 
 # set(Python_FIND_VIRTUALENV FIRST)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)

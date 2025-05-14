@@ -8,6 +8,13 @@ target_include_directories(${EXAMPLE_NAME}
     PUBLIC
         ${CUDA_INCLUDE_DIRS}
 )
+target_compile_definitions(${EXAMPLE_NAME}
+    PUBLIC
+        EIGEN_NO_CUDA
+        EIGEN_DONT_VECTORIZE
+        EIGEN_DONT_ALIGN
+        $<$<COMPILE_LANGUAGE:CUDA>:EIGEN_NO_CUDA;EIGEN_DONT_VECTORIZE;EIGEN_DONT_ALIGN>
+)
 target_link_libraries(${EXAMPLE_NAME}
     PUBLIC
         cusolver
