@@ -41,6 +41,20 @@ def checklandmarks(edges, landmarks, weights, rgbs, N, M):
     weights = weights[~indices]
     rgbs = rgbs[~indices]
     landmarks = landmarks[~indices]
+    
+    max_frame, N, indices_frame = delete_thereshold(0, N, edges[:,0]-1)
+    edges[:,0] = indices_frame[edges[:,0]-1].copy() + 1
+
+    N_old = np.where(indices_all > -1)[0].shape[0]
+    indices_all_copy = indices_all.copy()
+    for i in range(N_old):
+        indices_all[np.where(indices_all_copy == i)[0]] = indices_frame[i]
+    # delete the row that edges contain -1
+    indices = np.any(edges == 0, axis=1)
+    edges = edges[~indices]
+    weights = weights[~indices]
+    landmarks = landmarks[~indices]
+    rgbs = rgbs[~indices]
 
     G = nx.Graph()
     for u, v in edges:
