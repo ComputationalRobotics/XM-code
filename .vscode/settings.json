@@ -1,5 +1,6 @@
 {
     "files.associations": {
         "random": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/home/lasserre/Haoyu/XM-code/XM"
 }

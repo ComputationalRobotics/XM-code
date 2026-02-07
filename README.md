@@ -147,6 +147,20 @@ If you want to run the experiment in paper, please also install [TEASER](https:/
 
 [TUM](https://cvg.cit.tum.de/data/datasets/rgbd-dataset/download) datasets: images and ground truth in given time stamps.
 
+## BibTeX
+
+```
+@inproceedings{han25rss-xm,
+  title={Building Rome with Convex Optimization},
+  author={Han, Haoyu and Yang, Heng},
+  booktitle={Robotics: Science and Systems (RSS)},
+  month={July},
+  year={2025},
+  url={https://computationalrobotics.seas.harvard.edu/XM/}
+}
+
+```
+
 
 
 

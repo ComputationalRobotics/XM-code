@@ -16,6 +16,7 @@ from tqdm import tqdm
 import cv2
 import torch
 import open3d as o3d
+import pickle
 
 import XM
 
@@ -151,6 +152,9 @@ if run_glomap:
         R = quat2rot(relpose[i, 2], relpose[i, 3], relpose[i, 4], relpose[i, 5])
         t = relpose[i, 6:9]
         glomap_pose[(image_id1, image_id2)] = (R, t)  
+    
+    with open(output_path + "/glomap_pose.pkl", "wb") as file:
+        pickle.dump(glomap_pose, file)
         
     np.save(output_path + "/filename.npy", filename)
 
